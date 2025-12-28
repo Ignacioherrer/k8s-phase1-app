@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: phase1-app
+  namespace: phase1-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: phase1
+  template:
+    metadata:
+      labels:
+        app: phase1
+    spec:
+      containers:
+        - name: app
+          image: ignaxubuntu/k8s-phase1-app:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
