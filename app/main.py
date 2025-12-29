@@ -1,55 +1,40 @@
-import os
-import time
-import signal
-import sys
-from fastapi import FastAPI
-from threading import Event
+from fastapi import FastAPI, Response, status
 
 app = FastAPI()
 
-# Configuration from environment variables
-STARTUP_DELAY = int(os.getenv("STARTUP_DELAY", "10"))
-RESPONSE_DELAY = float(os.getenv("RESPONSE_DELAY", "0"))
-SHUTDOWN_GRACE = int(os.getenv("SHUTDOWN_GRACE", "10"))
-
-ready = False
-shutdown_event = Event()
-
-
-@app.on_event("startup")
-def startup_event():
-    global ready
-    print(f"Starting application. Simulating startup delay: {STARTUP_DELAY}s")
-    time.sleep(STARTUP_DELAY)
-    ready = True
-    print("Application is ready.")
-
-
-@app.get("/health")
-def health():
-    return {"status": "alive"}
-
-
-@app.get("/ready")
-def readiness():
-    if ready:
-        return {"status": "ready"}
-    return {"status": "not ready"}
-
+is_healthy = True
+is_ready = True
 
 @app.get("/")
 def root():
-    time.sleep(RESPONSE_DELAY)
-    return {"message": "Hello from Kubernetes Phase 1"}
+    return {
+        "message": "Phase 1 app running",
+        "healthy": is_healthy,
+        "ready": is_ready
+    }
 
+@app.post("/break-readiness")
+def break_readiness():
+    global is_ready
+    is_ready = False
+    return {"message": "Readiness broken"}
 
-def handle_sigterm(signum, frame):
-    global ready
-    print("SIGTERM received. Shutting down gracefully...")
-    ready = False
-    time.sleep(SHUTDOWN_GRACE)
-    print("Shutdown complete.")
-    sys.exit(0)
+@app.post("/break-liveness")
+def break_liveness():
+    global is_healthy
+    is_healthy = False
+    return {"message": "Liveness broken"}
 
+@app.get("/ready")
+def readiness(response: Response):
+    if not is_ready:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return {"status": "not ready"}
+    return {"status": "ready"}
 
-signal.signal(signal.SIGTERM, handle_sigterm)
+@app.get("/health")
+def health(response: Response):
+    if not is_healthy:
+        response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        return {"status": "unhealthy"}
+    return {"status": "healthy"}

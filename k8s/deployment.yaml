@@ -15,7 +15,22 @@ spec:
     spec:
       containers:
         - name: app
-          image: ignaxubuntu/k8s-phase1-app:1.0.0
+          image: ignaxubuntu/k8s-phase1-app:1.1.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+
