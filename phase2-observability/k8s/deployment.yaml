@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: obs-demo
+  namespace: observability-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: obs-demo
+  template:
+    metadata:
+      labels:
+        app: obs-demo
+    spec:
+      containers:
+      - name: app
+        image: ignaxubuntu/obs-demo-app:1.0.0
+        ports:
+        - containerPort: 8000
